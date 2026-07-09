@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="ko" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>스타일리시 LED 전광판</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts for diverse styles -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Gamja+Flower&family=Nanum+Gothic:wght@400;700;800&family=Nanum+Myeongjo:wght@700;800&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              mint: '#00F5D4',
+              pink: '#FF007F',
+              neonYellow: '#CCFF00',
+              darkBg: '#0B0F19',
+              lightBg: '#F8FAFC'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom font mappings */
+    .font-gothic { font-family: 'Nanum Gothic', sans-serif; font-weight: 800; }
+    .font-myeongjo { font-family: 'Nanum Myeongjo', serif; font-weight: 800; }
+    .font-cute { font-family: 'Gamja Flower', cursive; }
+    .font-neon { font-family: 'Orbitron', sans-serif; font-weight: 900; }
+    .font-heavy { font-family: 'Black Han Sans', sans-serif; }
+
+    /* Custom scrollbar hiding */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Keyframes for Blink */
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+    .effect-blink {
+      animation: blink 0.8s infinite;
+    }
+
+    /* Horizontal Marquee Base */
+    @keyframes marquee-left {
+      0% { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+    @keyframes marquee-right {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .animate-marquee-left {
+      display: inline-block;
+      white-space: nowrap;
+      animation: marquee-left var(--marquee-duration, 6s) linear infinite;
+    }
+
+    .animate-marquee-right {
+      display: inline-block;
+      white-space: nowrap;
+      animation: marquee-right var(--marquee-duration, 6s) linear infinite;
+    }
+
+    /* Landscape auto-rotate helper for Fullscreen */
+    @media (max-width: 1024px) and (orientation: portrait) {
+      .fullscreen-landscape {
+        transform: rotate(90deg);
+        transform-origin: bottom left;
+        position: absolute;
+        top: -100vw;
+        left: 0;
+        width: 100vh;
+        height: 100vw;
+        overflow: hidden;
+      }
+    }
+  </style>
+</head>
+<body class="bg-brand-lightBg text-slate-800 dark:bg-brand-darkBg dark:text-slate-100 min-h-screen transition-colors duration-300 overflow-x-hidden font-gothic selection:bg-brand-mint/30">
+
+  <!-- Main Container -->
+  <div id="app-container" class="flex flex-col h-screen max-w-md mx-auto bg-white dark:bg-slate-900 shadow-2xl relative overflow-hidden transition-all duration-300">
+    
+    <!-- HEADER -->
+    <header class="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-10">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-mint to-brand-pink flex items-center justify-center shadow-md">
+          <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
+        </div>
+        <h1 class="text-lg font-extrabold tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">NEON LED</h1>
+      </div>
+      
+      <!-- Theme Toggle & Reset -->
+      <div class="flex items-center gap-3">
+        <button id="theme-toggle" class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors" title="화면 테마 변경">
+          <i data-lucide="moon" id="theme-icon-dark" class="w-5 h-5 hidden"></i>
+          <i data-lucide="sun" id="theme-icon-light" class="w-5 h-5"></i>
+        </button>
+        <button id="btn-reset" class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors" title="설정 초기화">
+          <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- UPPER 40%: PREVIEW AREA -->
+    <div class="relative h-[35%] bg-slate-950 flex items-center justify-center overflow-hidden border-b border-slate-900 shadow-inner group">
+      <!-- Grid Background Overlay for Real LED Feel -->
+      <div class="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[size:100%_4px,6px_100%] pointer-events-none z-10"></div>
+      
+      <!-- Real-time Render Target -->
+      <div id="preview-screen" class="w-full h-full flex items-center justify-center overflow-hidden transition-colors duration-300 px-8" style="background-color: #000000;">
+        <span id="preview-text" class="text-4xl text-center select-none font-gothic whitespace-nowrap">
+          반가워요!
+        </span>
+      </div>
+
+      <!-- Badge Overlay -->
+      <span class="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-[10px] text-brand-mint font-semibold px-2 py-0.5 rounded-full border border-brand-mint/20 tracking-wider uppercase z-20">
+        Preview
+      </span>
+    </div>
+
+    <!-- LOWER 65%: CONTROLLER PANEL -->
+    <div class="h-[65%] overflow-y-auto no-scrollbar px-5 py-6 space-y-6 bg-slate-50/50 dark:bg-slate-950/40 z-0">
+      
+      <!-- Section 1: Text Input -->
+      <div class="space-y-2">
+        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">문구 입력</label>
+        <div class="relative">
+          <input type="text" id="input-text" maxlength="30" value="빛나는 밤, 응원해요!" 
+            class="w-full px-4 py-3.5 pr-10 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 focus:ring-2 focus:ring-brand-mint focus:border-transparent outline-none transition-all font-medium text-slate-700 dark:text-slate-200 shadow-sm"
+            placeholder="응원 메시지를 입력하세요">
+          <button id="btn-clear-text" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+            <i data-lucide="x-circle" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Section 2: Font Style Selector (Chips) -->
+      <div class="space-y-2">
+        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">폰트 스타일</label>
+        <div class="flex flex-wrap gap-2">
+          <button data-font="font-gothic" class="font-chip active-chip px-4 py-2.5 rounded-xl text-sm font-bold transition-all border shadow-sm">
+            고딕
+          </button>
+          <button data-font="font-heavy" class="font-chip px-4 py-2.5 rounded-xl text-sm font-bold transition-all border shadow-sm">
+            격동
+          </button>
+          <button data-font="font-myeongjo" class="font-chip px-4 py-2.5 rounded-xl text-sm font-bold transition-all border shadow-sm">
+            명조
+          </button>
+          <button data-font="font-cute" class="font-chip px-4 py-2.5 rounded-xl text-sm font-bold transition-all border shadow-sm">
+            아기자기
+          </button>
+          <button data-font="font-neon" class="font-chip px-4 py-2.5 rounded-xl text-sm font-bold transition-all border shadow-sm">
+            NEON
+          </button>
+        </div>
+      </div>
+
+      <!-- Section: Font Size Selector -->
+      <div class="space-y-2 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-sm">
+        <div class="flex justify-between items-center text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+          <span>글자 크기</span>
+          <span id="size-value" class="text-brand-mint font-bold text-sm">보통</span>
+        </div>
+        <input type="range" id="input-size" min="1" max="10" value="5" class="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-brand-mint">
+      </div>
+
+      <!-- Section 3: Color Palette (Text & Background) -->
+      <div class="grid grid-cols-2 gap-4">
+        <!-- Text Color -->
+        <div class="space-y-2 bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800/85 shadow-sm">
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">글자 색상</label>
+          <div class="grid grid-cols-4 gap-2">
+            <!-- Signature Neons -->
+            <button data-color="#00F5D4" class="color-dot text-color-dot w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 shadow-sm transform active:scale-95 transition-all" style="background-color: #00F5D4;" title="네온 민트"></button>
+            <button data-color="#FF007F" class="color-dot text-color-dot w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 shadow-sm transform active:scale-95 transition-all" style="background-color: #FF007F;" title="인디 핑크"></button>
+            <button data-color="#CCFF00" class="color-dot text-color-dot w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 shadow-sm transform active:scale-95 transition-all" style="background-color: #CCFF00;" title="네온 라임"></button>
+            <button data-color="#39FF14" class="color-dot text-color-dot w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 shadow-sm transform active:scale-95 transition-all" style="background-color: #39FF14;" title="일렉트릭 그린"></button>
+            
+            <!-- Warm & Vivid Colors -->
+            <button data-color="#FF3131" class="color-dot text-color-dot w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 shadow-sm transform active:scale-95 transition-all" style="background-color: #FF3131;" title="일렉트릭 레드"></button>
+            <button data-color="#FF5E00" class="color-dot text-color-dot w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 shadow-sm transform active:scale-95 transition-all" style="background-color: #FF5E00;" title="에너지 오렌지"></button>
+            <button data-color="#FFFF00" class="color-dot text-color-dot w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 shadow-sm transform active:scale-95 transition-all" style="background-color: #FFFF00;" title="하이퍼 옐로우"></button>
+            <button data-color="#00E5FF" class="color-dot text-color-dot w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 shadow-sm transform active:scale-95 transition-all" style="background-color: #00E5FF;" title="사이버 블루"></button>
+            
+            <!-- Darker & Metallic Neons -->
+            <button data-color="#8A2BE2" class="color-dot text-color-dot w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 shadow-sm transform active:scale-95 transition-all" style="background-color: #8A2BE2;" title="네온 퍼플"></button>
+            <button data-color="#FF00FF" class="color-dot text-color-dot w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 shadow-sm transform active:scale-95 transition-all" style="background-color: #FF00FF;" title="마젠타"></button>
+            <button data-color="#FFFFFF" class="color-dot text-color-dot w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 shadow-sm transform active:scale-95 transition-all" style="background-color: #FFFFFF;" title="퓨어 화이트"></button>
+            
+            <!-- Custom Color Pipette -->
+            <label class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 shadow-md flex items-center justify-center cursor-pointer relative overflow-hidden bg-slate-100 dark:bg-slate-800 border-dashed border-slate-300 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors" title="직접 선택">
+              <i data-lucide="pipette" class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400"></i>
+              <input type="color" id="text-color-custom" value="#00F5D4" class="absolute inset-0 opacity-0 cursor-pointer">
+            </label>
+          </div>
+        </div>
+
+        <!-- Background Color -->
+        <div class="space-y-2 bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800/85 shadow-sm">
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">배경 색상</label>
+          <div class="grid grid-cols-4 gap-2">
+            <button data-color="#000000" class="color-dot bg-color-dot w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 shadow-sm transform active:scale-95 transition-all" style="background-color: #000000;" title="블랙"></button>
+            <button data-color="#0F172A" class="color-dot bg-color-dot w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 shadow-sm transform active:scale-95 transition-all" style="background-color: #0F172A;" title="슬레이트 네이비"></button>
+            <button data-color="#1E1E2F" class="color-dot bg-color-dot w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 shadow-sm transform active:scale-95 transition-all" style="background-color: #1E1E2F;" title="미드나잇 퍼플"></button>
+            <button data-color="#0A1C14" class="color-dot bg-color-dot w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 shadow-sm transform active:scale-95 transition-all" style="background-color: #0A1C14;" title="딥 포레스트"></button>
+            <button data-color="#1A0B2E" class="color-dot bg-color-dot w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 shadow-sm transform active:scale-95 transition-all" style="background-color: #1A0B2E;" title="다크 바이올렛"></button>
+            <button data-color="#3C0919" class="color-dot bg-color-dot w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 shadow-sm transform active:scale-95 transition-all" style="background-color: #3C0919;" title="머룬 레드"></button>
+            <button data-color="#FFFFFF" class="color-dot bg-color-dot w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 shadow-sm transform active:scale-95 transition-all border-slate-300" style="background-color: #FFFFFF;" title="화이트"></button>
+            <!-- Custom input wheel -->
+            <label class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 shadow-md flex items-center justify-center cursor-pointer relative overflow-hidden bg-slate-100 dark:bg-slate-800 border-dashed border-slate-300 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors" title="직접 선택">
+              <i data-lucide="pipette" class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400"></i>
+              <input type="color" id="bg-color-custom" value="#000000" class="absolute inset-0 opacity-0 cursor-pointer">
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 4: LED Effects (Blink, Neon Glow) -->
+      <div class="space-y-4">
+        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">효과 스타일</label>
+        
+        <div class="grid grid-cols-2 gap-3">
+          <!-- Neon Glow Toggle -->
+          <button id="toggle-neon" class="effect-btn flex items-center justify-between p-3.5 rounded-2xl border text-sm font-semibold transition-all shadow-sm">
+            <span class="flex items-center gap-2">
+              <i data-lucide="sparkles" class="w-4 h-4 text-pink-500"></i>
+              네온 네온
+            </span>
+            <span class="status-indicator w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+          </button>
+
+          <!-- Blink Toggle -->
+          <button id="toggle-blink" class="effect-btn flex items-center justify-between p-3.5 rounded-2xl border text-sm font-semibold transition-all shadow-sm">
+            <span class="flex items-center gap-2">
+              <i data-lucide="eye" class="w-4 h-4 text-amber-500"></i>
+              깜빡임
+            </span>
+            <span class="status-indicator w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+          </button>
+        </div>
+
+        <!-- Scroll Direction Control -->
+        <div class="space-y-2">
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">흐르기 방향</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button id="scroll-dir-none" class="dir-btn active-dir py-2 rounded-xl text-xs font-bold transition-all border shadow-sm">고정</button>
+            <button id="scroll-dir-left" class="dir-btn py-2 rounded-xl text-xs font-bold transition-all border shadow-sm flex items-center justify-center gap-1">
+              <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> 왼쪽
+            </button>
+            <button id="scroll-dir-right" class="dir-btn py-2 rounded-xl text-xs font-bold transition-all border shadow-sm flex items-center justify-center gap-1">
+              오른쪽 <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Speed Slider -->
+        <div id="speed-slider-container" class="space-y-2 hidden">
+          <div class="flex justify-between items-center text-xs font-semibold text-slate-500">
+            <span>속도 조절</span>
+            <span id="speed-value" class="text-brand-pink font-bold">보통</span>
+          </div>
+          <input type="range" id="input-speed" min="1" max="10" value="5" class="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-brand-pink">
+        </div>
+      </div>
+
+      <!-- Action Button -->
+      <button id="btn-fullscreen-trigger" class="w-full py-4 rounded-2xl bg-gradient-to-r from-brand-mint to-teal-400 dark:from-brand-mint dark:to-emerald-400 text-slate-900 font-extrabold text-base tracking-wide flex items-center justify-center gap-2 hover:shadow-lg active:scale-[0.98] transition-all mt-4">
+        <i data-lucide="maximize" class="w-5 h-5"></i>
+        전화면 시작
+      </button>
+
+    </div>
+
+  </div>
+
+  <!-- FULLSCREEN DISPLAY MODE OVERLAY -->
+  <div id="fullscreen-overlay" class="hidden fixed inset-0 bg-black z-50 flex items-center justify-center overflow-hidden cursor-pointer select-none">
+    
+    <!-- Immersive LED Text Render Target -->
+    <div id="fullscreen-container" class="w-full h-full flex items-center justify-center overflow-hidden px-12 relative">
+      <!-- Grid Effect -->
+      <div class="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.3)_50%),linear-gradient(90deg,rgba(255,0,0,0.08),rgba(0,255,0,0.03),rgba(0,0,255,0.08))] bg-[size:100%_6px,8px_100%] pointer-events-none z-10"></div>
+      
+      <!-- Back button guide overlay (appears briefly, then fades) -->
+      <div id="fullscreen-tip" class="absolute top-6 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-md border border-white/10 px-4 py-2 rounded-full text-white/70 text-xs font-semibold flex items-center gap-2 pointer-events-none transition-opacity duration-1000 z-30">
+        <i data-lucide="info" class="w-4 h-4 text-brand-mint"></i>
+        <span>아무 곳이나 탭하면 편집 화면으로 돌아갑니다</span>
+      </div>
+
+      <!-- Dynamic Fullscreen LED Text -->
+      <div id="fullscreen-text-wrapper" class="w-full text-center">
+        <span id="fullscreen-text" class="text-7xl md:text-9xl tracking-wide select-none"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- APPLICATION CORE LOGIC -->
+  <script>
+    // System & Design State
+    const state = {
+      text: '빛나는 밤, 응원해요!',
+      fontClass: 'font-gothic',
+      fontSize: 5, // 1 to 10
+      textColor: '#00F5D4',
+      bgColor: '#000000',
+      neonGlow: true,
+      blink: false,
+      scrollDir: 'none', // 'none' | 'left' | 'right'
+      speed: 5, // 1 to 10
+      isDark: true
+    };
+
+    // DOM Elements
+    const elements = {
+      appContainer: document.getElementById('app-container'),
+      themeToggle: document.getElementById('theme-toggle'),
+      themeIconDark: document.getElementById('theme-icon-dark'),
+      themeIconLight: document.getElementById('theme-icon-light'),
+      btnReset: document.getElementById('btn-reset'),
+      
+      previewScreen: document.getElementById('preview-screen'),
+      previewText: document.getElementById('preview-text'),
+      
+      inputText: document.getElementById('input-text'),
+      btnClearText: document.getElementById('btn-clear-text'),
+      
+      fontChips: document.querySelectorAll('.font-chip'),
+      inputSize: document.getElementById('input-size'),
+      sizeValueText: document.getElementById('size-value'),
+      
+      textColorDots: document.querySelectorAll('.text-color-dot'),
+      bgColorDots: document.querySelectorAll('.bg-color-dot'),
+      textColorCustom: document.getElementById('text-color-custom'),
+      bgColorCustom: document.getElementById('bg-color-custom'),
+      
+      toggleNeon: document.getElementById('toggle-neon'),
+      toggleBlink: document.getElementById('toggle-blink'),
+      
+      scrollDirNone: document.getElementById('scroll-dir-none'),
+      scrollDirLeft: document.getElementById('scroll-dir-left'),
+      scrollDirRight: document.getElementById('scroll-dir-right'),
+      
+      speedSliderContainer: document.getElementById('speed-slider-container'),
+      inputSpeed: document.getElementById('input-speed'),
+      speedValueText: document.getElementById('speed-value'),
+      
+      btnFullscreenTrigger: document.getElementById('btn-fullscreen-trigger'),
+      fullscreenOverlay: document.getElementById('fullscreen-overlay'),
+      fullscreenContainer: document.getElementById('fullscreen-container'),
+      fullscreenText: document.getElementById('fullscreen-text'),
+      fullscreenTip: document.getElementById('fullscreen-tip')
+    };
+
+    // Default configuration backup
+    const defaults = { ...state };
+
+    // Initial setups
+    function init() {
+      // Setup icons
+      lucide.createIcons();
+      
+      // Load Theme Preference or default to Dark
+      setTheme(state.isDark);
+      
+      // Apply initial view state
+      syncUI();
+      renderLED();
+      setupEventListeners();
+    }
+
+    // Set Theme (Light / Dark)
+    function setTheme(dark) {
+      state.isDark = dark;
+      if (dark) {
+        document.documentElement.classList.add('dark');
+        elements.themeIconDark.classList.remove('hidden');
+        elements.themeIconLight.classList.add('hidden');
+      } else {
+        document.documentElement.classList.remove('dark');
+        elements.themeIconDark.classList.add('hidden');
+        elements.themeIconLight.classList.remove('hidden');
+      }
+    }
+
+    // Sync UI controls with current State
+    function syncUI() {
+      // 1. Sync Text input
+      elements.inputText.value = state.text;
+
+      // 2. Sync Fonts
+      elements.fontChips.forEach(chip => {
+        const isTarget = chip.getAttribute('data-font') === state.fontClass;
+        chip.className = `font-chip px-4 py-2.5 rounded-xl text-sm font-bold transition-all border shadow-sm ${
+          isTarget 
+          ? 'bg-slate-900 border-slate-900 text-white dark:bg-white dark:border-white dark:text-slate-900' 
+          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700'
+        }`;
+      });
+
+      // 3. Sync Font Size Slider
+      elements.inputSize.value = state.fontSize;
+      let sizeLabel = '보통';
+      if (state.fontSize <= 3) sizeLabel = '작게';
+      else if (state.fontSize >= 8) sizeLabel = '아주 크게';
+      else if (state.fontSize >= 6) sizeLabel = '크게';
+      elements.sizeValueText.textContent = `${sizeLabel} (Lv.${state.fontSize})`;
+
+      // 4. Sync Text Color Palette
+      elements.textColorDots.forEach(dot => {
+        const dotColor = dot.getAttribute('data-color').toUpperCase();
+        const activeColor = state.textColor.toUpperCase();
+        if (dotColor === activeColor) {
+          dot.classList.add('ring-4', 'ring-brand-pink', 'scale-105');
+        } else {
+          dot.classList.remove('ring-4', 'ring-brand-pink', 'scale-105');
+        }
+      });
+      elements.textColorCustom.value = state.textColor;
+
+      // 5. Sync Background Color Palette
+      elements.bgColorDots.forEach(dot => {
+        const dotColor = dot.getAttribute('data-color').toUpperCase();
+        const activeColor = state.bgColor.toUpperCase();
+        if (dotColor === activeColor) {
+          dot.classList.add('ring-4', 'ring-brand-pink', 'scale-105');
+        } else {
+          dot.classList.remove('ring-4', 'ring-brand-pink', 'scale-105');
+        }
+      });
+      elements.bgColorCustom.value = state.bgColor;
+
+      // 6. Sync Effects (Neon & Blink)
+      updateEffectToggleButton(elements.toggleNeon, state.neonGlow);
+      updateEffectToggleButton(elements.toggleBlink, state.blink);
+
+      // 7. Sync Direction Mode Buttons
+      const dirs = ['none', 'left', 'right'];
+      const dirBtns = [elements.scrollDirNone, elements.scrollDirLeft, elements.scrollDirRight];
+      
+      dirs.forEach((dir, index) => {
+        const btn = dirBtns[index];
+        const isTarget = state.scrollDir === dir;
+        btn.className = `dir-btn py-2 rounded-xl text-xs font-bold transition-all border shadow-sm flex items-center justify-center gap-1 ${
+          isTarget
+          ? 'bg-slate-900 border-slate-900 text-white dark:bg-white dark:border-white dark:text-slate-900'
+          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+        }`;
+      });
+
+      // Show/Hide speed slider based on direction
+      if (state.scrollDir !== 'none') {
+        elements.speedSliderContainer.classList.remove('hidden');
+      } else {
+        elements.speedSliderContainer.classList.add('hidden');
+      }
+
+      // Sync Speed Slider value text
+      elements.inputSpeed.value = state.speed;
+      let speedText = '보통';
+      if (state.speed <= 3) speedText = '느림';
+      else if (state.speed >= 8) speedText = '매우 빠름';
+      else if (state.speed >= 6) speedText = '빠름';
+      elements.speedValueText.textContent = speedText;
+    }
+
+    function updateEffectToggleButton(btnElement, isActive) {
+      const indicator = btnElement.querySelector('.status-indicator');
+      if (isActive) {
+        btnElement.className = 'effect-btn flex items-center justify-between p-3.5 rounded-2xl border text-sm font-semibold transition-all shadow-sm bg-slate-900 border-slate-900 text-white dark:bg-white dark:border-white dark:text-slate-900';
+        indicator.className = 'status-indicator w-2.5 h-2.5 rounded-full bg-brand-mint';
+      } else {
+        btnElement.className = 'effect-btn flex items-center justify-between p-3.5 rounded-2xl border text-sm font-semibold transition-all shadow-sm bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300';
+        indicator.className = 'status-indicator w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700';
+      }
+    }
+
+    // Render configuration to Preview and Fullscreen targets
+    function renderLED() {
+      // Define target nodes
+      const targets = [
+        { textNode: elements.previewText, screenNode: elements.previewScreen, isFull: false },
+        { textNode: elements.fullscreenText, screenNode: elements.fullscreenContainer, isFull: true }
+      ];
+
+      targets.forEach(({ textNode, screenNode, isFull }) => {
+        // Set dynamic text content
+        textNode.textContent = state.text || ' ';
+
+        // Clear dynamic styles, animations, effects classes
+        textNode.className = '';
+        
+        // Apply target font style
+        textNode.classList.add(state.fontClass);
+        
+        // Colors & Neon
+        screenNode.style.backgroundColor = state.bgColor;
+        textNode.style.color = state.textColor;
+
+        // Apply Responsive Font Size (Preview uses rem / Fullscreen uses vmin)
+        if (isFull) {
+          textNode.style.fontSize = (state.fontSize * 1.8 + 5) + 'vmin';
+        } else {
+          textNode.style.fontSize = (state.fontSize * 0.45 + 1.2) + 'rem';
+        }
+
+        // Apply Custom Neon Glow effect
+        if (state.neonGlow) {
+          const glowColor = state.textColor;
+          textNode.style.textShadow = `
+            0 0 4px ${glowColor}55, 
+            0 0 12px ${glowColor}aa, 
+            0 0 20px ${glowColor}, 
+            0 0 40px ${glowColor}ee,
+            0 0 60px ${glowColor}cc
+          `;
+        } else {
+          textNode.style.textShadow = 'none';
+        }
+
+        // Apply Blink effect
+        if (state.blink) {
+          textNode.classList.add('effect-blink');
+        }
+
+        // Apply Marquee Scroll animations
+        if (state.scrollDir !== 'none') {
+          // Duration based on speed (higher speed slider means lower duration time)
+          const baseDuration = isFull ? 12 : 8; // Larger width takes longer to traverse at same speed
+          const computedDuration = (baseDuration - (state.speed * 0.8)).toFixed(1);
+          textNode.style.setProperty('--marquee-duration', `${computedDuration}s`);
+          
+          if (state.scrollDir === 'left') {
+            textNode.classList.add('animate-marquee-left');
+          } else if (state.scrollDir === 'right') {
+            textNode.classList.add('animate-marquee-right');
+          }
+        }
+      });
+    }
+
+    // Handle full screen switching
+    function enterFullscreen() {
+      const isMobile = window.innerWidth <= 1024;
+      const isLandscape = window.innerHeight < window.innerWidth;
+      
+      // Update full screen state & render ahead
+      renderLED();
+      elements.fullscreenOverlay.classList.remove('hidden');
+
+      // Tip overlay briefly animation
+      elements.fullscreenTip.style.opacity = '1';
+      setTimeout(() => {
+        elements.fullscreenTip.style.opacity = '0';
+      }, 3000);
+
+      // Attempt Browser API fullscreen trigger
+      const requestFullScreen = document.documentElement.requestFullscreen || 
+                                document.documentElement.mozRequestFullScreen || 
+                                document.documentElement.webkitRequestFullScreen || 
+                                document.documentElement.msRequestFullscreen;
+      if (requestFullScreen) {
+        requestFullScreen.call(document.documentElement).catch(err => {
+          console.warn("Fullscreen request denied: ", err);
+        });
+      }
+
+      // Handle custom landscape rotation on mobile portrait
+      if (isMobile && !isLandscape) {
+        // Enforce landscape rotation class
+        elements.fullscreenContainer.classList.add('fullscreen-landscape');
+      } else {
+        elements.fullscreenContainer.classList.remove('fullscreen-landscape');
+      }
+    }
+
+    function exitFullscreen() {
+      elements.fullscreenOverlay.classList.add('hidden');
+      elements.fullscreenContainer.classList.remove('fullscreen-landscape');
+
+      const exitFullScreen = document.exitFullscreen || 
+                             document.mozCancelFullScreen || 
+                             document.webkitExitFullscreen || 
+                             document.msExitFullscreen;
+      if (exitFullScreen && document.fullscreenElement) {
+        exitFullScreen.call(document);
+      }
+    }
+
+    // Bind Event Listeners
+    function setupEventListeners() {
+      // Toggle Theme
+      elements.themeToggle.addEventListener('click', () => {
+        setTheme(!state.isDark);
+      });
+
+      // Clear all to defaults
+      elements.btnReset.addEventListener('click', () => {
+        Object.assign(state, defaults);
+        syncUI();
+        renderLED();
+      });
+
+      // Text input trigger
+      elements.inputText.addEventListener('input', (e) => {
+        state.text = e.target.value;
+        renderLED();
+      });
+
+      // Clear Text action
+      elements.btnClearText.addEventListener('click', () => {
+        state.text = '';
+        elements.inputText.value = '';
+        renderLED();
+        elements.inputText.focus();
+      });
+
+      // Font Chips Choose
+      elements.fontChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+          state.fontClass = chip.getAttribute('data-font');
+          syncUI();
+          renderLED();
+        });
+      });
+
+      // Font Size Slider Change
+      elements.inputSize.addEventListener('input', (e) => {
+        state.fontSize = parseInt(e.target.value, 10);
+        syncUI();
+        renderLED();
+      });
+
+      // Text color dots Choose
+      elements.textColorDots.forEach(dot => {
+        dot.addEventListener('click', () => {
+          state.textColor = dot.getAttribute('data-color');
+          syncUI();
+          renderLED();
+        });
+      });
+
+      // Custom Text Color Change
+      elements.textColorCustom.addEventListener('input', (e) => {
+        state.textColor = e.target.value;
+        syncUI();
+        renderLED();
+      });
+
+      // Background color dots Choose
+      elements.bgColorDots.forEach(dot => {
+        dot.addEventListener('click', () => {
+          state.bgColor = dot.getAttribute('data-color');
+          syncUI();
+          renderLED();
+        });
+      });
+
+      // Custom Background Color Change
+      elements.bgColorCustom.addEventListener('input', (e) => {
+        state.bgColor = e.target.value;
+        syncUI();
+        renderLED();
+      });
+
+      // Neon Effect Switch
+      elements.toggleNeon.addEventListener('click', () => {
+        state.neonGlow = !state.neonGlow;
+        syncUI();
+        renderLED();
+      });
+
+      // Blink Effect Switch
+      elements.toggleBlink.addEventListener('click', () => {
+        state.blink = !state.blink;
+        syncUI();
+        renderLED();
+      });
+
+      // Direction Changes
+      elements.scrollDirNone.addEventListener('click', () => {
+        state.scrollDir = 'none';
+        syncUI();
+        renderLED();
+      });
+      
+      elements.scrollDirLeft.addEventListener('click', () => {
+        state.scrollDir = 'left';
+        syncUI();
+        renderLED();
+      });
+      
+      elements.scrollDirRight.addEventListener('click', () => {
+        state.scrollDir = 'right';
+        syncUI();
+        renderLED();
+      });
+
+      // Speed Slider change
+      elements.inputSpeed.addEventListener('input', (e) => {
+        state.speed = parseInt(e.target.value, 10);
+        syncUI();
+        renderLED();
+      });
+
+      // Fullscreen Actions
+      elements.btnFullscreenTrigger.addEventListener('click', enterFullscreen);
+      elements.fullscreenOverlay.addEventListener('click', exitFullscreen);
+
+      // Support escape/back key to quit fullscreen gracefully
+      document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement) {
+          exitFullscreen();
+        }
+      });
+    }
+
+    // Run initialization on load
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
